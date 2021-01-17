@@ -1,0 +1,13 @@
+https://wiki.openstreetmap.org/wiki/Key:amenity
+https://wiki.openstreetmap.org/wiki/Key:shop
+https://wiki.openstreetmap.org/wiki/Key:diplomatic
+https://wiki.openstreetmap.org/wiki/Key:office
+https://wiki.openstreetmap.org/wiki/Key:tourism
+https://wiki.openstreetmap.org/wiki/Key:leisure
+https://wiki.openstreetmap.org/wiki/Key:public_transport
+https://wiki.openstreetmap.org/wiki/Key:landuse
+https://wiki.openstreetmap.org/wiki/Key:craft
+https://wiki.openstreetmap.org/wiki/Key:healthcare
+https://wiki.openstreetmap.org/wiki/Key:building
+https://wiki.openstreetmap.org/wiki/Key:industrial
+https://wiki.openstreetmap.org/wiki/Key:historic
