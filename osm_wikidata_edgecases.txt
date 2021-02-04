@@ -1,0 +1,64 @@
+amenity,ice_cream,https://www.wikidata.org/wiki/Q1311064
+amenity,pub,https://www.wikidata.org/wiki/Q212198
+amenity,restaurant,https://www.wikidata.org/wiki/Q11707
+amenity,college,https://www.wikidata.org/wiki/Q765192
+amenity,childcare,https://www.wikidata.org/wiki/Q1455871
+amenity,embassy,https://www.wikidata.org/wiki/Q213283
+amenity,public building,https://www.wikidata.org/wiki/Q327333
+amenity,townhall,https://www.wikidata.org/wiki/Q543654
+shop,butcher,https://en.wikipedia.org/wiki/Butcher
+shop,doityourself,https://www.wikidata.org/wiki/Q811530
+leisure,marina,https://www.wikidata.org/wiki/Q721207
+landuse,industrial,https://www.wikidata.org/wiki/Q329683
+landuse,construction,https://www.wikidata.org/wiki/Q360418
+landuse,farmyard,https://www.wikidata.org/wiki/Q2887356
+landuse,military,https://www.wikidata.org/wiki/Q8473
+landuse,port,https://www.wikidata.org/wiki/Q44782
+landuse,reservoir,https://www.wikidata.org/wiki/Q131681
+landuse,cemetery,https://www.wikidata.org/wiki/Q39614
+landuse,garages,https://www.wikidata.org/wiki/Q22733
+landuse,greenfield,https://www.wikidata.org/wiki/Q12018455
+landuse,greenhouse_horticulture,https://www.wikidata.org/wiki/Q165044
+landuse,railway,https://www.wikidata.org/wiki/Q3565868
+man made,bunker silo,https://www.wikidata.org/wiki/Q213643
+man made,communications tower,https://www.wikidata.org/wiki/Q1068623
+man made,reservoir covered,https://www.wikidata.org/wiki/Q2551525
+man made,street cabinet,https://www.wikidata.org/wiki/Q104969796
+man made,surveillance,https://www.wikidata.org/wiki/Q242256
+man made,wildlife crossing,https://www.wikidata.org/wiki/Q1077135
+natural,tree row,https://www.wikidata.org/wiki/Q10884
+natural,water,https://www.wikidata.org/wiki/Q15324
+natural,coastline,https://www.wikidata.org/wiki/Q1701967
+natural,dune,https://www.wikidata.org/wiki/Q25391
+natural,hill,https://www.wikidata.org/wiki/Q54050
+natural,isthmus,https://www.wikidata.org/wiki/Q93267
+natural,peninsula,https://www.wikidata.org/wiki/Q34763
+natural,stone,https://www.wikidata.org/wiki/Q581776
+natural,rock,https://www.wikidata.org/wiki/Q8063
+natural,cave entrance,https://www.wikidata.org/wiki/Q35509
+
+
+
+
+
+
+
+building,yes,https://www.wikidata.org/wiki/Q41176
+office,diplomatic,https://www.wikidata.org/wiki/Q213283
+office,yes,https://www.wikidata.org/wiki/Q182060
+
+
+
+
+
+
+
+
+
+
+
+# special cases for further investigation:
+https://wiki.openstreetmap.org/wiki/Key:water
+https://wiki.openstreetmap.org/wiki/Key:type
+https://wiki.openstreetmap.org/wiki/Relation:building
+https://wiki.openstreetmap.org/wiki/Key:healthcare

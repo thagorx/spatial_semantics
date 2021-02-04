@@ -20,10 +20,5 @@ https://wiki.openstreetmap.org/wiki/Key:route
 https://wiki.openstreetmap.org/wiki/Key:sport
 https://wiki.openstreetmap.org/wiki/Key:telecom
 https://wiki.openstreetmap.org/wiki/Key:waterway
-
-
-
-
-# special cases for further investigation:
-https://wiki.openstreetmap.org/wiki/Key:type
-https://wiki.openstreetmap.org/wiki/Relation:building
+https://wiki.openstreetmap.org/wiki/Key:military
+https://wiki.openstreetmap.org/wiki/Key:information
