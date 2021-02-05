@@ -20,5 +20,5 @@ https://wiki.openstreetmap.org/wiki/Key:route
 https://wiki.openstreetmap.org/wiki/Key:sport
 https://wiki.openstreetmap.org/wiki/Key:telecom
 https://wiki.openstreetmap.org/wiki/Key:waterway
-https://wiki.openstreetmap.org/wiki/Key:military
 https://wiki.openstreetmap.org/wiki/Key:information
+https://wiki.openstreetmap.org/wiki/Key:water

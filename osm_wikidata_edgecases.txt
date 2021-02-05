@@ -65,19 +65,7 @@ office,yes,https://www.wikidata.org/wiki/Q182060
 
 
 # special cases for further investigation:
-https://wiki.openstreetmap.org/wiki/Key:office
-https://wiki.openstreetmap.org/wiki/Key:craft
-https://wiki.openstreetmap.org/wiki/Key:water
-https://wiki.openstreetmap.org/wiki/Key:industrial
-https://wiki.openstreetmap.org/wiki/Key:historic
-https://wiki.openstreetmap.org/wiki/Key:emergency
-https://wiki.openstreetmap.org/wiki/Key:military
-https://wiki.openstreetmap.org/wiki/Key:route
-https://wiki.openstreetmap.org/wiki/Key:sport
-https://wiki.openstreetmap.org/wiki/Key:telecom
-https://wiki.openstreetmap.org/wiki/Key:information
-
-
 https://wiki.openstreetmap.org/wiki/Key:type
 https://wiki.openstreetmap.org/wiki/Relation:building
 https://wiki.openstreetmap.org/wiki/Key:healthcare
+https://wiki.openstreetmap.org/wiki/Key:water
