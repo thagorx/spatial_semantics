@@ -1,0 +1,5 @@
+# special cases for further investigation:
+https://wiki.openstreetmap.org/wiki/Key:type
+https://wiki.openstreetmap.org/wiki/Relation:building
+https://wiki.openstreetmap.org/wiki/Key:healthcare
+https://wiki.openstreetmap.org/wiki/Key:water

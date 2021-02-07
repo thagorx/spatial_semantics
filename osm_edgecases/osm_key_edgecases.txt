@@ -1,0 +1,6 @@
+industrial,https://www.wikidata.org/wiki/Q329683
+craft,https://www.wikidata.org/wiki/Q2207288
+railway,https://www.wikidata.org/wiki/Q22667
+sport,https://www.wikidata.org/wiki/Q349
+telecom,https://www.wikidata.org/wiki/Q1780509
+water,https://www.wikidata.org/wiki/Q15324
