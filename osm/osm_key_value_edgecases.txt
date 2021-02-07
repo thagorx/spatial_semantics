@@ -42,6 +42,7 @@ healthcare,podiatrist,www.wikidata.org/entity/Q3393065
 healthcare,psychotherapist,https://www.wikidata.org/wiki/Q1900167
 healthcare,rehabilitation,https://www.wikidata.org/wiki/Q2795791
 historic,ruin,https://www.wikidata.org/wiki/Q109607
+historic,castle,https://www.wikidata.org/wiki/Q23413
 man_made,bunker_silo,https://www.wikidata.org/wiki/Q213643
 man_made,communications tower,https://www.wikidata.org/wiki/Q1068623
 man_made,reservoir covered,https://www.wikidata.org/wiki/Q2551525
@@ -89,3 +90,5 @@ water,reflecting_pool,https://www.wikidata.org/wiki/Q1328914
 water,moat,https://www.wikidata.org/wiki/Q88480
 water,wastewater,https://www.wikidata.org/wiki/Q336191
 water,ditch,https://www.wikidata.org/wiki/Q2048319
+information,trail_blaze,https://www.wikidata.org/wiki/Q1042490
+information,route_marker,https://www.wikidata.org/wiki/Q1042490
