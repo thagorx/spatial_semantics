@@ -50,7 +50,7 @@ def generate_querry_poly(poly):
         poly = poly.simplify(0.1, preserve_topology=True)
     
     # extracts the exterior coords and puts them into a string
-    poly_string = ' '.join([f'{lat:.6f} {lon:.6f}' for lat,lon in list(poly.exterior.coords)])
+    poly_string = ' '.join([f'{lat:.6f} {lon:.6f}' for lon,lat in list(poly.exterior.coords)])
     
     return poly_string
 
@@ -340,7 +340,7 @@ class disect_osm:
                     break
             
             # if the way now is closed it goes into the closed way list
-            if way[0].coords[-1] == way.coords[0]:
+            if way.coords[-1] == way.coords[0]:
                 closed_ways.append(Polygon(way))
 
             # if not back into the pool of unclosed ways
