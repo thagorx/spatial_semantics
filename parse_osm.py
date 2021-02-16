@@ -334,7 +334,7 @@ class disect_osm:
                 if way.coords[-1] == match_way.coords[0]:
                     # if they are a match we merge them and 
                     # remove the copy of the matched way
-                    way = shapely.ops.linemerge(geometry.MultiLineString([way, match_way]))
+                    way = shapely.ops.linemerge(MultiLineString([way, match_way]))
                     
                     unclosed_ways.remove(match_way)
                     break
