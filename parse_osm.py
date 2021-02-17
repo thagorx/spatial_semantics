@@ -8,6 +8,8 @@ import requests
 from shapely.geometry import Polygon, LineString, Point, MultiPolygon, MultiLineString, MultiPoint
 import shapely
 import pandas as pd
+import re
+import time
 
 
 # In[3]:
@@ -73,12 +75,29 @@ def json_from_osm(poly, mode='nwr', key=None, value=None, operand='='):
             >;
             out skel qt;
             '''
-
+    # currently there are only 2 slots available on a timer so we have to 
+    # check if there is an open slot
+    if 'overpass-api.de' in overpass_url:
+        wait_for_slot()
+    
     respones = requests.get(overpass_url, params={'data': query})
     
     assert respones.ok, respones.text
 
     return respones.json()
+
+
+def wait_for_slot():
+    status_url = "https://overpass-api.de/api/status"
+    respones = requests.get(status_url)
+    
+    if not 'slots available now' in respones.text:
+        # find all blocked slots and how long we have to wait for them
+        l = [int(seconds) for seconds in re.findall(r'(?<=in )(\d*)(?= seconds)', respones.text)]
+        l.sort()
+        sleep_t = l[0]+1
+        print(f'next open slot in {sleep_t} seconds sleeping till then')
+        time.sleep(sleep_t)
 
 
 class disect_osm:
@@ -325,17 +344,16 @@ class disect_osm:
     
     def _close_ways(self,unclosed_ways):
         closed_ways = []
-
         while unclosed_ways:
             way = unclosed_ways.pop()
 
             # we pop up a way an try to merge it with any other of the ways
             for match_way in unclosed_ways:
-                if way.coords[-1] == match_way.coords[0]:
+                if (way.coords[-1] == match_way.coords[0]) or (way.coords[-1] == match_way.coords[-1]):
+                    print('found a way to match')
                     # if they are a match we merge them and 
                     # remove the copy of the matched way
-                    way = shapely.ops.linemerge(MultiLineString([way, match_way]))
-                    
+                    way = linemerge(MultiLineString([way, match_way]))
                     unclosed_ways.remove(match_way)
                     break
             
