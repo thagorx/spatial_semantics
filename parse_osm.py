@@ -250,8 +250,9 @@ class disect_osm:
         # now we filter out the none
         point_geometries = [geom['point'] for geom in point_geometries if geom]
         
-        # its a polygon if first and last element are the same
-        if point_geometries[0] == point_geometries[-1]:
+        # its a polygon if first and last element are the same and has more than 
+        # 2 coordinate pairs
+        if (point_geometries[0] == point_geometries[-1]) and (len(point_geometries) > 2):
             temp_poly = Polygon(point_geometries)
 
             # simple fix for invalid polygons
