@@ -6,6 +6,7 @@
 
 import requests
 from shapely.geometry import Polygon, LineString, Point, MultiPolygon, MultiLineString, MultiPoint
+from shapely.ops import linemerge
 import shapely
 import pandas as pd
 import re
@@ -75,6 +76,13 @@ def json_from_osm(poly, mode='nwr', key=None, value=None, operand='='):
             >;
             out skel qt;
             '''
+
+    respones = get_data(overpass_url,query)
+
+    return respones.json()
+
+
+def get_data(overpass_url,query):
     # currently there are only 2 slots available on a timer so we have to 
     # check if there is an open slot
     if 'overpass-api.de' in overpass_url:
@@ -82,13 +90,20 @@ def json_from_osm(poly, mode='nwr', key=None, value=None, operand='='):
     
     respones = requests.get(overpass_url, params={'data': query})
     
+    if 'The server is probably too busy to handle your request' in respones.text:
+        # server seems to be busy we wait for a second
+        # and try again
+        print('overpass server is busy')
+        time.sleep(1)
+        respones = get_data(overpass_url,query)
+    
     assert respones.ok, respones.text
-
-    return respones.json()
+    
+    return respones
 
 
 def wait_for_slot():
-    status_url = "https://overpass-api.de/api/status"
+    status_url = "https://overpass-api.de/api/status/"
     respones = requests.get(status_url)
     
     if not 'slots available now' in respones.text:
@@ -96,8 +111,9 @@ def wait_for_slot():
         l = [int(seconds) for seconds in re.findall(r'(?<=in )(\d*)(?= seconds)', respones.text)]
         l.sort()
         sleep_t = l[0]+1
-        print(f'next open slot in {sleep_t} seconds sleeping till then')
+        print(f'next open slot in {sleep_t} seconds waiting till then')
         time.sleep(sleep_t)
+        wait_for_slot()
 
 
 class disect_osm:
@@ -125,79 +141,80 @@ class disect_osm:
         # select the feature in question from the df
         try:
             # recusion does some times fail when the feature refferenced wasn't retrieved from osm
-            feature = self.feature_df[(self.feature_df['type']==f_type) & (self.feature_df['id']==osmid)].iloc[0]
+            feature = self.feature_df.loc[(f_type,osmid)]
+            geometry_ref = feature['geometry_ref']
             geometry = feature['geometry']
+            
         except:
+            # if we can not retriefe a feature we set everyting to none
             f_type = None
             geometry = None
         
         # test if the geometry is already pressent in solved form in the dataframe
         # if not we solve it otherwise we return what was fetched
-        try:
-            # this is a bit hacky but what it accomplishes is to test if 
-            # geometry is a dictonary and if so it contains on of the geometry keys
-            # in any other case this throws an exception
-            if not list(geometry.keys())[0] in self.geometry_types:
-                raise Exception
-        
-        except:
+        if (not geometry) and (f_type):
             
             if f_type == 'node':
-                geometry = self._solve_node(geometry)
+                geometry = self._solve_node(geometry_ref)
 
             if f_type == 'way':
-                geometry = self._solve_way(geometry)
+                geometry = self._solve_way(geometry_ref)
 
             if f_type == 'relation':
                 if feature['tags']['type'] == 'multipolygon':
                     # Multipolygons are a special case for relations
                     # so they have thier own solver
-                    geometry = self._solve_relation_multipolygon(geometry)
+                    geometry = self._solve_relation_multipolygon(geometry_ref)
                 else:
-                    geometry = self._solve_relation(geometry) 
+                    geometry = self._solve_relation(geometry_ref) 
+
+            # if the geometry wasnt before solved we put the solved form back into the dataframe
+            # putting geometry into a list is a hack that gets around the ValueError: setting an array element with a sequence.
+            # see https://stackoverflow.com/questions/26483254/python-pandas-insert-list-into-a-cell
             
-            # we need to make sure it is a an existing features
-            if f_type:
-                # if the geometry wasnt before solved we put the solved form back into the dataframe
-                # putting geometry into a list is a hack that gets around the ValueError: setting an array element with a sequence.
-                # see https://stackoverflow.com/questions/26483254/python-pandas-insert-list-into-a-cell
-                self.feature_df.loc[(self.feature_df['type'] == f_type) & (self.feature_df['id']==osmid), 'geometry'] = [geometry]
+            try:
+                self.feature_df.at[(f_type,osmid), 'geometry'] = geometry
+            except:
+                print(geometry)
+                xbreak()
 
         return geometry
     
     def _parse_osm_json(self,):
-        self.feature_list = []
-    
-        for element in self.osm_json['elements']:
 
-            if element['type'] == 'node':
-
-                if self.cache_nodes:
-                    # since nodes are the basis of all the things and not reliant on other features
-                    # we solve them when the dataframe gets created
-                    self.feature = [element['type'],element['id'],self._solve_node((element['lon'],element['lat'])),]
-                else:
-                    self.feature = [element['type'],element['id'],(element['lon'],element['lat']),]
-
-            elif element['type'] == 'way':
-                self.feature = [element['type'],element['id'],element['nodes'],]
-
-            elif element['type'] == 'relation':
-                self.feature = [element['type'],element['id'],element['members'],]
-
-            #not all elements have tags
-            try:
-                self.feature.append(element['tags'])                        
-            except:
-                self.feature.append(None) 
-
-            self.feature_list.append(self.feature)
-
-        self.feature_df = pd.DataFrame(self.feature_list, columns=['type','id','geometry','tags'])
+        with Pool(thread_count) as p:
+            feature_list = p.map(self._parallel_parse, self.osm_json['elements'])
+        
+        self.feature_df = pd.DataFrame(feature_list, columns=['type','id','geometry_ref','geometry','tags'])
         # because of the type of Overpass QL querry  
         # see: https://help.openstreetmap.org/questions/78620/duplicate-features-retrieved-with-overpass-ql
         # some features are duplicated in the dataframe so here we merge them and combine the tags of them
-        self.feature_df = self.feature_df.groupby(['type','id']).aggregate(self._agg_tags).reset_index()
+        if len(self.feature_df) > 0:
+            self.feature_df = self.feature_df.groupby(['type','id']).aggregate(self._agg_tags)#.reset_index().set_index(['type', 'id',])
+            
+    def _parallel_parse(self, element):
+        if element['type'] == 'node':
+
+            if self.cache_nodes:
+                # since nodes are the basis of all the things and not reliant on other features
+                # we solve them when the dataframe gets created
+                feature = [element['type'],element['id'],None,self._solve_node((element['lon'],element['lat'])),]
+            else:
+                feature = [element['type'],element['id'],(element['lon'],element['lat']),None]
+
+        elif element['type'] == 'way':
+            feature = [element['type'],element['id'],element['nodes'],None]
+
+        elif element['type'] == 'relation':
+            feature = [element['type'],element['id'],element['members'],None]
+
+        #not all elements have tags
+        try:
+            feature.append(element['tags'])                        
+        except:
+            feature.append(None) 
+
+        return feature    
     
     def _agg_tags(self,x):
         # function aggregates multiple tags into one tags dictonary
@@ -226,14 +243,14 @@ class disect_osm:
     
     def _solve_way(self, node_list):
         
-        point_geometries = [self.generate_geometry('node',node_id)['point'] for node_id in node_list]
-        
-        # its faster to filter None later rather than in the comprehension above
-        # otherwise I would querry the dataframe twice for one node    
-        point_geometries = [geom for geom in point_geometries if geom]
+#         with Pool(thread_count) as p:            
+#             point_geometries = p.map(self._parrallel_geometry_way, node_list)
+        point_geometries = [self.generate_geometry('node',node_id) for node_id in node_list]
+        # now we filter out the none
+        point_geometries = [geom['point'] for geom in point_geometries if geom]
         
         # its a polygon if first and last element are the same
-        if node_list[0] == node_list[-1]:
+        if point_geometries[0] == point_geometries[-1]:
             temp_poly = Polygon(point_geometries)
 
             # simple fix for invalid polygons
@@ -247,6 +264,11 @@ class disect_osm:
             
         return geom
     
+    def _parrallel_geometry_way(self, node_id):
+        print(current_process())
+        return self.generate_geometry('node',node_id)
+    
+    
     def _solve_relation(self, member_list):
         geom = {'multipoint':[],
                 'multiline':[],
@@ -254,7 +276,8 @@ class disect_osm:
         
         for member in member_list:
             member_geom = self.generate_geometry(member['type'],member['ref'])
-            
+
+                
             if not member_geom:
                 # if no geometrie for this member can be found we skip it
                 continue
@@ -272,13 +295,13 @@ class disect_osm:
                     geom['multiline'].append(member_geom[geom_type])
                 if geom_type == 'multiline':
                     # multi features need to split to be later be put togehter again
-                    [geom['multiline'].append(point) for point in list(member_geom[geom_type])]    
+                    [geom['multiline'].append(line) for line in list(member_geom[geom_type])]    
                 
                 if geom_type == 'polygon':
                     geom['multipolygon'].append(member_geom[geom_type])
                 if geom_type == 'multipolygon':
                     # multi features need to split to be later be put togehter again
-                    [geom['multipolygon'].append(point) for point in list(member_geom[geom_type])] 
+                    [geom['multipolygon'].append(poly) for poly in list(member_geom[geom_type])] 
                     
         geom_transform_func = {'multipoint':MultiPoint,
                                'multiline':MultiLineString,
@@ -293,8 +316,9 @@ class disect_osm:
         for key in keys_to_delete:
             del geom[key]
         
-        return geom
-   
+        return geom  
+
+
     def _solve_relation_multipolygon(self, member_list):
         # osm has special multipolygon rules
         # all the things that have an inner and an outer border are
@@ -338,6 +362,7 @@ class disect_osm:
 
             
         # now lastly we have to solve which polygon is the inner to which outer polygon
+        
         multi_poly = self._solve_inner_outer(member_geom_dict)
         
         return {'multipolygon':multi_poly}
@@ -416,68 +441,7 @@ if debug:
     
     osm_json = json_from_osm(q_poly)
     
-    
     test =  disect_osm(osm_json)
-    osmid = test.feature_df[test.feature_df['type']=='relation'].sample().iloc[0]['id']
+    osmid = test.feature_df.loc['relation'].index[0]
     test_multi = test.generate_geometry('relation',osmid)
-    test_multi['multipolygon']
-
-
-# In[215]:
-
-
-# import ipyleaflet
-# from ipyleaflet import Map, basemaps, basemap_to_tiles, GeoJSON, WKTLayer
-# from ipywidgets import Label
-
-# # osmid = test.feature_df[test.feature_df['type']=='relation'].sample().iloc[0]['id']
-# # test_multi = test.generate_geometry('relation',osmid)
-
-# m = Map(
-#     basemap=basemaps.CartoDB.Positron,
-#     # for some reason lat lon are switch for centering the map
-#     center=(q_poly.centroid.coords[0]),
-#     zoom=14
-# )
-
-# wlayer = WKTLayer(
-#     wkt_string=test_multi['multipolygon'].wkt,
-#     #hover_style={"fillColor": "red"},
-#     fill_color="red",
-#     color="red",
-# )
-
-# wlayer2 = WKTLayer(
-#     wkt_string=Polygon([(cord[1],cord[0]) for cord in q_poly.exterior.coords]).wkt,
-#     #hover_style={"fillColor": "red"},
-
-# )
-
-# label = Label()
-# display(label)
-
-
-
-# def handle_interaction(**kwargs):
-#     cords = '[]'
-#     if kwargs.get('type') == 'click':
-#         cords = f'{cords[:-1]}({kwargs.get("coordinates")[0]},{kwargs.get("coordinates")[1]})]'
-#         label.value = cords
-
-# m.on_interaction(handle_interaction)
-
-
-# m.add_layer(wlayer)
-# m.add_layer(wlayer2)
-
-# # geo_json = GeoJSON(
-# #     data=geojson_from_osm(poly,key='amenity',value='university'),
-# #     color="red",
-# #     fill_color="red"
-# # )
-
-# # m.add_layer(geo_json)
-
-
-# m
-
+    print(test_multi)
