@@ -14,7 +14,8 @@ import time
 from multiprocessing import Pool, current_process
 
 # In[3]:
-
+overpass_url = "http://overpass-api.de/api/interpreter"
+thread_count = 8 
 
 # TODO's:
 # - second
