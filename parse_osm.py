@@ -376,7 +376,7 @@ class disect_osm:
             # we pop up a way an try to merge it with any other of the ways
             for match_way in unclosed_ways:
                 if (way.coords[-1] == match_way.coords[0]) or (way.coords[-1] == match_way.coords[-1]):
-                    print('found a way to match')
+                    
                     # if they are a match we merge them and 
                     # remove the copy of the matched way
                     way = linemerge(MultiLineString([way, match_way]))
