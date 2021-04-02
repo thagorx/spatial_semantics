@@ -250,9 +250,13 @@ class disect_osm:
         # now we filter out the none
         point_geometries = [geom['point'] for geom in point_geometries if geom]
         
+
+        if not point_geometries:
+            geom = None
+        
         # its a polygon if first and last element are the same and has more than 
         # 2 coordinate pairs
-        if (point_geometries[0] == point_geometries[-1]) and (len(point_geometries) > 2):
+        elif (point_geometries[0] == point_geometries[-1]) and (len(point_geometries) > 2):
             temp_poly = Polygon(point_geometries)
 
             # simple fix for invalid polygons
@@ -261,8 +265,14 @@ class disect_osm:
             
             geom = {'polygon':temp_poly} 
         
-        else:
+        # for a line we need atleast 2 points
+        elif len(point_geometries) > 1:
             geom = {'line':LineString(point_geometries)}
+            
+        else:
+            # if we arive here ther might be something wrong with the way
+            # so better to not return it at all
+            geom = None
             
         return geom
     
