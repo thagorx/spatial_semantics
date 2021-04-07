@@ -109,12 +109,17 @@ def wait_for_slot():
     
     if not 'slots available now' in respones.text:
         # find all blocked slots and how long we have to wait for them
-        l = [int(seconds) for seconds in re.findall(r'(?<=in )(\d*)(?= seconds)', respones.text)]
-        l.sort()
-        sleep_t = l[0]+1
-        print(f'next open slot in {sleep_t} seconds waiting till then')
-        time.sleep(sleep_t)
-        wait_for_slot()
+        try:
+            l = [int(seconds) for seconds in re.findall(r'(?<=in )(\d*)(?= seconds)', respones.text)]
+            l.sort()
+            sleep_t = l[0]+1
+            print(f'next open slot in {sleep_t} seconds waiting till then')
+            time.sleep(sleep_t)
+            wait_for_slot()
+        except:
+            print(respones.text)
+            time.sleep(10)
+            wait_for_slot()
 
 
 class disect_osm:
@@ -344,7 +349,14 @@ class disect_osm:
         member_dict = {'inner':[],'outer':[]}
         
         for member in member_list:
-            member_dict[member['role']].append(member['ref'])
+            
+            try:
+                # sometimes a meber does not addhere to specifications
+                # so we need to catch that
+                member_dict[member['role']].append(member['ref'])
+            except:
+                # if a member is not up to snuff we discard it
+                pass 
             
         unclosed_ways = []
         member_geom_dict = {'inner':[],'outer':[]}
