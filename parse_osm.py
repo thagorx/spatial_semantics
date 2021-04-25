@@ -140,25 +140,37 @@ class disect_osm:
         # these are all the geometrie types features can have, relations can have multiple of those
         self.geometry_types = ['point','multipoint','line','multiline','polygon','multipolygon']
         self._parse_osm_json()
+        
+    def get_geometry(self, f_type, osmid):
+        # this is the new entry point to the geometry from outside the class
+        # its the most elegant solution I think to keep track of the cylical
+        # recursion issue this iniates and already seen list this list keeps
+        # track of features that should already been solved 
+        self.seen_features = []
+        geometry = self._generate_geometry(f_type, osmid)
+        return geometry
     
-    def generate_geometry(self, f_type, osmid):
-        # osmid within a feautre type are unique
+    def _generate_geometry(self, f_type, osmid):
+        # osmid within a feature type are unique
         # but its possible that there is a node relation and way with id 467
         # select the feature in question from the df
+            
         try:
             # recusion does some times fail when the feature refferenced wasn't retrieved from osm
             feature = self.feature_df.loc[(f_type,osmid)]
             geometry_ref = feature['geometry_ref']
             geometry = feature['geometry']
-            
+
         except:
-            # if we can not retriefe a feature we set everyting to none
+            # if we can not retrieve a feature we set everyting to none
             f_type = None
             geometry = None
         
         # test if the geometry is already pressent in solved form in the dataframe
         # if not we solve it otherwise we return what was fetched
         if (not geometry) and (f_type):
+            
+            f_type, osmid = self._cycle_test(f_type,osmid)
             
             if f_type == 'node':
                 geometry = self._solve_node(geometry_ref)
@@ -177,15 +189,28 @@ class disect_osm:
             # if the geometry wasnt before solved we put the solved form back into the dataframe
             # putting geometry into a list is a hack that gets around the ValueError: setting an array element with a sequence.
             # see https://stackoverflow.com/questions/26483254/python-pandas-insert-list-into-a-cell
-            
-            try:
+            if geometry:
                 self.feature_df.at[(f_type,osmid), 'geometry'] = geometry
-            except:
-                print(geometry)
-                xbreak()
 
         return geometry
     
+    def _cycle_test(self,f_type,osmid):
+        # cycle test looks if the element should already been solved
+        # we come accros and element twice and its still unsolved if we are in
+        # and cycle 
+        
+        if (f_type, osmid) in self.seen_features:
+            # if there is a cycle this should break it
+            print(f'cycle found in {f_type} {osmid}')
+            f_type = None
+            geometry = None
+            
+        else:
+            # if its an unseen feature we add it to the list and then try to solve it
+            self.seen_features.append((f_type, osmid))
+        
+        return f_type, osmid
+        
     def _parse_osm_json(self,):
 
         with Pool(thread_count) as p:
@@ -251,7 +276,7 @@ class disect_osm:
         
 #         with Pool(thread_count) as p:            
 #             point_geometries = p.map(self._parrallel_geometry_way, node_list)
-        point_geometries = [self.generate_geometry('node',node_id) for node_id in node_list]
+        point_geometries = [self._generate_geometry('node',node_id) for node_id in node_list]
         # now we filter out the none
         point_geometries = [geom['point'] for geom in point_geometries if geom]
         
@@ -283,7 +308,7 @@ class disect_osm:
     
     def _parrallel_geometry_way(self, node_id):
         print(current_process())
-        return self.generate_geometry('node',node_id)
+        return self._generate_geometry('node',node_id)
     
     
     def _solve_relation(self, member_list):
@@ -292,7 +317,7 @@ class disect_osm:
                 'multipolygon':[]}
         
         for member in member_list:
-            member_geom = self.generate_geometry(member['type'],member['ref'])
+            member_geom = self._generate_geometry(member['type'],member['ref'])
 
                 
             if not member_geom:
@@ -356,7 +381,7 @@ class disect_osm:
                 member_dict[member['role']].append(member['ref'])
             except:
                 # if a member is not up to snuff we discard it
-                pass 
+                pass    
             
         unclosed_ways = []
         member_geom_dict = {'inner':[],'outer':[]}
@@ -365,7 +390,7 @@ class disect_osm:
         for key in member_geom_dict:
             for way_id in member_dict[key]:
                 # this gets us the list of node ids a way consinsts of
-                way_geom = self.generate_geometry('way',way_id)                
+                way_geom = self._generate_geometry('way',way_id)                
                 # now we sort into lines and polygons
                 if way_geom:
                     try:
@@ -450,7 +475,6 @@ class disect_osm:
                                       [inner_feature.exterior.coords for inner_feature in solved_polys[i]['inner']]))
 
         return MultiPolygon(multi_list)
-
 
 # In[10]:
 
