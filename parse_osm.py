@@ -170,6 +170,9 @@ class disect_osm:
         # if not we solve it otherwise we return what was fetched
         if (not geometry) and (f_type):
             
+            # this prevents that we get an cylical dependency
+            # basicaly it returns None, None if we try to solve an object again that we 
+            # tried to solve before 
             f_type, osmid = self._cycle_test(f_type,osmid)
             
             if f_type == 'node':
