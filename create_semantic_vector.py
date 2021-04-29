@@ -9,7 +9,7 @@ from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
 class Spatial_Semantic_Vector:
     
-    def __init__(self, tag_df_path, tag_median_size_df_path):
+    def __init__(self, tag_df_path, tag_median_size_df_path,doc2vec_model_path):
         self.tag_df =  pd.read_pickle(tag_df_path)
         self.tag_median_size_df = pd.read_pickle(tag_median_size_df_path).set_index(['key','value']).sort_index()
         # replace pd nan with None
@@ -20,7 +20,7 @@ class Spatial_Semantic_Vector:
         # we sort the index to handle the "1: PerformanceWarning: indexing past lexsort 
         # depth may impact performance." Warning
         self.tag_df = self.tag_df.set_index(['key','value']).sort_index()
-        self.doc2vec_model = Doc2Vec.load("../data/en_wikipedia_corpus/doc2vec_eng.pickel")
+        self.doc2vec_model = Doc2Vec.load(doc2vec_model_path)
 
     def _compose_document(self, element):
         # example element:
