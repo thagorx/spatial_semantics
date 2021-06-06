@@ -123,15 +123,18 @@ class Spatial_Semantic_Vector:
         selected_tags_df['geometry'] = selected_tags_df['geometry'].apply(self._clip_2d_features)
         # filter out feauters who no longer have a geometry after clipping
         selected_tags_df = selected_tags_df.loc[selected_tags_df['geometry']!={}]
-        # lastly for the found featres with tags that intresst us we wiegh thier size 
+        # lastly for the found features with tags that intresst us we wiegh thier size 
         # (if ther is one) and combine them into a meta document
         combined_document = ''
-        for element in selected_tags_df[['geometry','tags']].apply(self.filtertags_handler.calcualte_size_for_tags, axis=1).tolist():
-            # and then we add the document shard for a given element
-            combined_document += self._compose_document(element)
-            # some padding
-            combined_document += ' '
-        # the combinded document we feed into ou doc2vec model and generate a vector
-        vec = self.doc2vec_model.infer_vector(combined_document.split(' '))
-
+        if not selected_tags_df.empty:
+            for element in selected_tags_df[['geometry','tags']].apply(self.filtertags_handler.calcualte_size_for_tags, axis=1).tolist():
+                # and then we add the document shard for a given element
+                combined_document += self._compose_document(element)
+                # some padding
+                combined_document += ' '
+            # the combinded document we feed into our doc2vec model and generate a vector
+            vec = self.doc2vec_model.infer_vector(combined_document.split(' '))
+        else:
+            vec = None
+        
         return vec
