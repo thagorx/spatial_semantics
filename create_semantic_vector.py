@@ -95,12 +95,14 @@ class Spatial_Semantic_Vector:
 
     def _clip_2d_features(self, feature):
         feature_cliped = {}
-        for geometry in ['line','polygon', 'multipolygon', 'multiline', 'multipoint']:
-            if feature.get(geometry):
-                # if we found a geometry we clip it to the extent of the bounding box
-                intersection = self.boundingbox.intersection(feature.get(geometry).buffer(0))
-                if intersection:
-                    feature_cliped[geometry] = intersection
+        
+        if feature:
+            for geometry in ['line','polygon', 'multipolygon', 'multiline', 'multipoint']:
+                if feature.get(geometry):
+                    # if we found a geometry we clip it to the extent of the bounding box
+                    intersection = self.boundingbox.intersection(feature.get(geometry).buffer(0))
+                    if intersection:
+                        feature_cliped[geometry] = intersection
         if 'point' in feature:
             # points are simply copied over
             feature_cliped['point'] = feature['point']
@@ -117,14 +119,16 @@ class Spatial_Semantic_Vector:
         type_id_list = selected_tags_df.index.tolist()
         # for the selected features we calculate the geometry:
         [osm_handle.get_geometry(f_type,osm_id) for f_type, osm_id in type_id_list]
-        #then we have to reslect the dataframe and make a copy of it for further proccesing
+        # then we have to reslect the dataframe and make a copy of it for further proccesing
         selected_tags_df = osm_handle.feature_df[osm_handle.feature_df.apply(self.filtertags_handler.filter_them, axis = 1)].copy()
+        # some features might not have a geometry becaus they are faulty so we filter out all features without an geometry:
+        selected_tags_df = selected_tags_df.loc[~selected_tags_df['geometry'].isnull()].copy()
         # we need to clip the 2 dimensional feautres to the extent of the $boundingbox
         selected_tags_df['geometry'] = selected_tags_df['geometry'].apply(self._clip_2d_features)
         # filter out feauters who no longer have a geometry after clipping
         selected_tags_df = selected_tags_df.loc[selected_tags_df['geometry']!={}]
         # lastly for the found features with tags that intresst us we wiegh thier size 
-        # (if ther is one) and combine them into a meta document
+        # (if there is one) and combine them into a meta document
         combined_document = ''
         if not selected_tags_df.empty:
             for element in selected_tags_df[['geometry','tags']].apply(self.filtertags_handler.calcualte_size_for_tags, axis=1).tolist():
@@ -135,6 +139,6 @@ class Spatial_Semantic_Vector:
             # the combinded document we feed into our doc2vec model and generate a vector
             vec = self.doc2vec_model.infer_vector(combined_document.split(' '))
         else:
-            vec = None
+            vec = 'no tags found'
         
         return vec
