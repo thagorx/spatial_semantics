@@ -154,7 +154,6 @@ class disect_osm:
         # osmid within a feature type are unique
         # but its possible that there is a node relation and way with id 467
         # select the feature in question from the df
-            
         try:
             # recusion does some times fail when the feature refferenced wasn't retrieved from osm
             feature = self.feature_df.loc[(f_type,osmid)]
@@ -170,9 +169,6 @@ class disect_osm:
         # if not we solve it otherwise we return what was fetched
         if (not geometry) and (f_type):
             
-            # this prevents that we get an cylical dependency
-            # basicaly it returns None, None if we try to solve an object again that we 
-            # tried to solve before 
             f_type, osmid = self._cycle_test(f_type,osmid)
             
             if f_type == 'node':
@@ -194,7 +190,7 @@ class disect_osm:
             # see https://stackoverflow.com/questions/26483254/python-pandas-insert-list-into-a-cell
             if geometry:
                 self.feature_df.at[(f_type,osmid), 'geometry'] = geometry
-
+                
         return geometry
     
     def _cycle_test(self,f_type,osmid):
@@ -421,10 +417,18 @@ class disect_osm:
     
     def _close_ways(self,unclosed_ways):
         closed_ways = []
+        
+        # there is an issue that some unclosed ways polygons arent complete
+        # this means that the list of unclosed ways can never be resolved because
+        # there aren't enough segments to match them all together
+        # we create the comparison list to see if there was any change in the 
+        # unclosed ways during the last itteration
+        reverence_list = unclosed_ways.copy()
+        
         while unclosed_ways:
             way = unclosed_ways.pop()
 
-            # we pop up a way an try to merge it with any other of the ways
+            # we pop of a way an try to merge it with any other of the ways
             for match_way in unclosed_ways:
                 if (way.coords[-1] == match_way.coords[0]) or (way.coords[-1] == match_way.coords[-1]):
                     
@@ -437,16 +441,30 @@ class disect_osm:
             # if the way now is closed it goes into the closed way list
             if way.coords[-1] == way.coords[0]:
                 closed_ways.append(Polygon(way))
-
+                
+                # we create a new refrence list to see if the list changes 
+                reverence_list = unclosed_ways.copy()
+            
             # if not back into the pool of unclosed ways
             else:
                 unclosed_ways.insert(0,way)
 
-            # if something goes wrong and only one way is left in here
-            # we break the loop 
-            # this should not happen but osm data is wobbly
-            if len(unclosed_ways) == 1:
-                break
+            # if something goes wrong and we go one itteration without chaning
+            # the list of unclosed ways the while loop breaks
+            # this should not happen but osm data is wobbly see relation:8761246
+            
+            if unclosed_ways == reverence_list:
+                # we then try to fix it into a kind of working polygon:
+                # complex list comprehension ahead!
+                # basically we throw the rest togehter and hope a valid polygon 
+                # comes out of it
+                try:
+                    remaining_ways = [coords for l in [list(l.coords) for l in unclosed_ways] for coords in l]
+                    closed_ways.append(Polygon(remaining_ways).buffer(0))
+                    unclosed_ways = None
+                
+                except:
+                    break
 
         return closed_ways
     
