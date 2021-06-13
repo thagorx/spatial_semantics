@@ -387,8 +387,8 @@ class disect_osm:
         # find and merge inner and outer unclosed ways
         
         for key in member_geom_dict:
+            # this gets us the list of way ids a multipolygon consinsts of
             for way_id in member_dict[key]:
-                # this gets us the list of node ids a way consinsts of
                 way_geom = self._generate_geometry('way',way_id)                
                 # now we sort into lines and polygons
                 if way_geom:
@@ -410,7 +410,6 @@ class disect_osm:
 
             
         # now lastly we have to solve which polygon is the inner to which outer polygon
-        
         multi_poly = self._solve_inner_outer(member_geom_dict)
         
         return {'multipolygon':multi_poly}
@@ -460,7 +459,11 @@ class disect_osm:
                 # comes out of it
                 try:
                     remaining_ways = [coords for l in [list(l.coords) for l in unclosed_ways] for coords in l]
-                    closed_ways.append(Polygon(remaining_ways).buffer(0))
+                    remaining_polys = Polygon(remaining_ways).buffer(0)
+                    if type(remaining_polys) == type(MultiPolygon()):
+                        closed_ways += list(remaining_polys)
+                    else:
+                        closed_ways.append(remaining_polys)
                     unclosed_ways = None
                 
                 except:
@@ -493,11 +496,9 @@ class disect_osm:
         # lastly we make shapely single polygons out of all of them 
         for i in solved_polys:
             multi_list.append(Polygon(solved_polys[i]['outer'].exterior.coords,
-                                      [inner_feature.exterior.coords for inner_feature in solved_polys[i]['inner']]))
+                                      [inner_feature.exterior.coords for inner_feature in solved_polys[i]['inner']]))              
 
         return MultiPolygon(multi_list)
-
-# In[10]:
 
 
 debug = False
